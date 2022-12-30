@@ -1,4 +1,5 @@
-deez(B) :-
-    [H_H|H_T] = [[1, 2, 3], [4, 5, 6]],
-    append(H_H, [a, b, c], B1),
-    append([B1], H_T, B).
+aaa(D) :-
+    D = 1; D = 2; D = 3; D = 4; D = 5.
+
+joelio(Result) :-
+    findall(L, aaa(L), Result).

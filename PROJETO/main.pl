@@ -190,3 +190,36 @@ getEventIds(Period, RoomType, Day, Hini, Hfim, Duration) :-
 numHorasOcupadas(Period, RoomType, Day, Hini, Hfim, SumH) :-
     findall(Duration, getEventIds(Period, RoomType, Day, Hini, Hfim, Duration), DurationList),
     foldl(sum, DurationList, 0, SumH).
+
+% #######################
+
+ocupacaoMax(RoomType, Hini, Hfim, Max) :-
+    Delta is Hfim - Hini,
+    salas(RoomType, R),
+    length(R, Len),
+    Max is Delta * Len.
+
+% #######################
+
+percentagem(SumH, Max, Percent) :- Percent is 100 * (SumH / Max).
+
+% #######################
+
+allDays(Day) :-
+    Day = segunda-feira; Day = terca-feira; Day = quarta-feira;
+    Day = quinta-feira; Day = sexta-feira.
+
+allPeriods(P) :-
+    P = p1; P = p2; P = p3; P = p4. 
+
+ocupacaoCritica_Aux(Hini, Hfim, Thold, Result_Day, Result_Room, Result_Percent) :-
+    salas(Result_Room, _),
+    allDays(Result_Day),
+    allPeriods(AllPeriods),
+    numHorasOcupadas(AllPeriods, Result_Room, Result_Day, Hini, Hfim, SumH),
+    ocupacaoMax(Result_Room, Hini, Hfim, Max),
+    percentagem(SumH, Max, Percents_pre),
+    Result_Percent is ceiling(Percents_pre), Result_Percent > Thold.
+
+ocupacaoCritica(Hini, Hfim, Thold, Results) :-
+    findall(casosCriticos(RDay, RRoom, RPercent), ocupacaoCritica_Aux(Hini, Hfim, Thold, RDay, RRoom, RPercent), Results).
