@@ -151,3 +151,42 @@ evolucaoHorasCurso(Curso, Evolucao) :-
     ListPeriods = [p1, p2, p3, p4, p1, p2, p3, p4, p1, p2, p3, p4],
     getEvolution(Curso, ListYears, ListPeriods, Evolucao_pre),
     sort(Evolucao_pre, Evolucao).
+
+
+% -------------------------- OCUPACOES CRITICAS ------------------------
+
+
+ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+    (HiniDada =< HiniEvt), (HfinDada >= HiniEvt),
+    (HiniDada =< HfinEvt), (HfinDada >= HfinEvt),
+    Horas is HfinEvt - HiniEvt, !.
+
+ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+    (HiniDada >= HiniEvt), (HfinDada >= HiniEvt),
+    (HiniDada =< HfinEvt), (HfinDada =< HfinEvt),
+    Horas is HfinDada - HiniDada, !.
+
+ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+    (HiniDada =< HiniEvt), (HfinDada >= HiniEvt),
+    (HiniDada =< HfinEvt), (HfinDada =< HfinEvt),
+    Horas is HfinDada - HiniEvt, !.
+
+ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+    (HiniDada >= HiniEvt), (HfinDada >= HiniEvt),
+    (HiniDada =< HfinEvt), (HfinDada >= HfinEvt),
+    Horas is HfinEvt - HiniDada, !.
+
+% #######################
+
+getEventIds(Period, RoomType, Day, Hini, Hfim, Duration) :-
+    horario(Id, Day, Hini_, Hfim_, _, _),
+    ocupaSlot(Hini_, Hfim_, Hini, Hfim, Duration),
+    evento(Id, _, _, _, Room),
+    salas(RoomType, R),
+    memberchk(Room, R),
+    isPeriod(Period, Id).
+
+
+numHorasOcupadas(Period, RoomType, Day, Hini, Hfim, SumH) :-
+    findall(Duration, getEventIds(Period, RoomType, Day, Hini, Hfim, Duration), DurationList),
+    foldl(sum, DurationList, 0, SumH).
