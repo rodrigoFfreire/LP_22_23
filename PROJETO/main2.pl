@@ -48,6 +48,7 @@ isPeriod(Period, ID) :-
     (Period = p3; Period = p4), !.
 
 
+eventosSemSalasPeriodo([], []). % Caso Terminal
 
 eventosSemSalasPeriodo([P|Ps], ListaSemSala) :-
     /*
@@ -56,16 +57,16 @@ eventosSemSalasPeriodo([P|Ps], ListaSemSala) :-
     */
     eventosSemSalas(Source),
     include(isPeriod(P), Source, ListaParcialNew),
-    eventosSemSalasPeriodo(Ps, Temp), % Temp -> Lista eventos dos periodos anteriores
+    eventosSemSalasPeriodo(Ps, Temp), % Lista eventos dos periodos anteriores
 
     append(Temp, ListaParcialNew, ListaSemSala_pre), % Lista completa
     sort(ListaSemSala_pre, ListaSemSala).
 
-eventosSemSalasPeriodo([], []). % Caso Terminal
-
 
 % ---------------------------------- PESQUISAS SIMPLES ----------------------------------
 
+
+organizaEventos([], _, []). % Caso Terminal
 
 organizaEventos([ListEventsHEAD|ListEventsTAIL], Periodo, EventosNoPeriodo) :-
     /* Caso 1: Periodo errado */
@@ -79,12 +80,10 @@ organizaEventos([ListEventsHEAD|ListEventsTAIL], Periodo, EventosNoPeriodo) :-
         Caso 2: Periodo correto
     */
     isPeriod(Periodo, ListEventsHEAD),
-    organizaEventos(ListEventsTAIL, Periodo, Temp), % Temp -> Lista eventos anteriores
+    organizaEventos(ListEventsTAIL, Periodo, Temp), % Lista eventos anteriores
 
     append(Temp, [ListEventsHEAD], EventosNoPeriodo_pre), % Lista completa
     sort(EventosNoPeriodo_pre, EventosNoPeriodo).
-
-organizaEventos([], _, []). % Caso Terminal
 
 
 
@@ -143,6 +142,7 @@ getSemester(Disciplina, Curso, Sem) :-
     \+ isSemesterOne(Id), Sem is 2, !.
     
 
+organizaDisciplinas([], _, [[],[]]). % Caso Terminal.
 
 organizaDisciplinas([ListDiscHEAD|ListDiscTAIL], Curso, Semestres) :-
     /* 
@@ -166,9 +166,6 @@ organizaDisciplinas([ListDiscHEAD|ListDiscTAIL], Curso, Semestres) :-
     append(TempTAIL, [ListDiscHEAD], Semestre2_pre), % Adicionar disciplina a sub-lista 2
     sort(Semestre2_pre, Semestre2),
     append([TempHEAD], [Semestre2], Semestres), !. % Obter a lista completa
-
-organizaDisciplinas([], _, [[],[]]). % Caso Terminal.
-
 
 
 % Predicado Auxiliar: eh verdade se Dur for a Duracao do evento de id ID
@@ -205,6 +202,8 @@ horasCurso(Periodo, Curso, Ano, TotalHours) :-
 
 
 
+getEvolution(_, [], [], []) :- !. % Caso Terminal
+
 getEvolution(Curso, [ListA_HEAD|ListA_TAIL], [ListP_HEAD|ListP_TAIL], Evolution) :-
     /* 
         Predicado Auxiliar: eh verdade se Evolution for a lista das horas totais
@@ -215,8 +214,6 @@ getEvolution(Curso, [ListA_HEAD|ListA_TAIL], [ListP_HEAD|ListP_TAIL], Evolution)
     Info = [(ListA_HEAD, ListP_HEAD, NumHoras)], % Tuplo de informacao
     getEvolution(Curso, ListA_TAIL, ListP_TAIL, Temp), % Lista dos tuplos anteriores
     append(Temp, Info, Evolution).
-
-getEvolution(_, [], [], []) :- !. % Caso Terminal
 
 
 evolucaoHorasCurso(Curso, Evolucao) :-
@@ -358,6 +355,7 @@ ocupacaoCritica(Hini, Hfim, Threshold, Resultados) :-
 
 % ------------------------------------ OCUPACAO MESA ------------------------------------ 
 
+
 cab1_(Name1, X4) :- X4 = Name1. % Predicado Auxiliar: Determina quem fica na cabeceira 1
 cab2_(Name1, X5) :- X5 = Name1. % Predicado Auxiliar: Determina quem fica na cabeceira 2
 
@@ -388,6 +386,8 @@ naoFrente_(Name1, Name2, X1, X2, X3, X6, X7, X8) :-
     \+ frente_(Name1, Name2, X1, X2, X3, X6, X7, X8).
 
 
+getRestrictions([], _, _, _, _, _, _, _, _). % Caso Terminal
+
 getRestrictions([RestHEAD|RestTAIL], X1, X2, X3, X4, X5, X6, X7, X8) :-
     /* 
         Predicado Auxiliar: Determina as restricoes impostas pela a lista [RestHEAD|RestTAIL]
@@ -402,14 +402,12 @@ getRestrictions([RestHEAD|RestTAIL], X1, X2, X3, X4, X5, X6, X7, X8) :-
 
     getRestrictions(RestTAIL, X1, X2, X3, X4, X5, X6, X7, X8).
 
-getRestrictions([], _, _, _, _, _, _, _, _). % Caso Terminal
-
 
 getNames(N_List, L1, L2, L3, L4, L5, L6, L7, L8) :-
     /* 
         Predicado Auxiliar: Determina todas as permutacoes da mesa
     */
-    permutation(N_List, [L1, L2, L3, L4, L5, L6, L7, L8]). % built-in que gera permutacoes 
+    permutation(N_List, [L1, L2, L3, L4, L5, L6, L7, L8]). 
 
 
 ocupacaoMesaAux(ListaNomes, ListaRest, OcupMesa) :-
@@ -417,10 +415,10 @@ ocupacaoMesaAux(ListaNomes, ListaRest, OcupMesa) :-
         Predicado Auxiliar: Predicado Final pronto para ser aplicado logo a seguir o
         predicado once/1. De modo a obter uma unica solucao
     */    
-    getNames(ListaNomes, X1, X2, X3, X4, X5, X6, X7, X8), % Obter as permutacoes de lugares
-    getRestrictions(ListaRest, X1, X2, X3, X4, X5, X6, X7, X8), % Aplicar as restricoes
+    getNames(ListaNomes, X1, X2, X3, X4, X5, X6, X7, X8),
+    getRestrictions(ListaRest, X1, X2, X3, X4, X5, X6, X7, X8),
 
-    OcupMesa = [[X1, X2, X3], [X4, X5], [X6, X7, X8]].  % Solucao
+    OcupMesa = [[X1, X2, X3], [X4, X5], [X6, X7, X8]].
 
 ocupacaoMesa(ListaNomes, ListaRest, OcupMesa) :-
     /* 
