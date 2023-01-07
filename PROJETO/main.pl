@@ -405,28 +405,14 @@ getRestrictions([RestHEAD|RestTAIL], X1, X2, X3, X4, X5, X6, X7, X8) :-
 getRestrictions([], _, _, _, _, _, _, _, _). % Caso Terminal
 
 
-getNames(N_List, L1, L2, L3, L4, L5, L6, L7, L8) :-
-    /* 
-        Predicado Auxiliar: Determina todas as permutacoes da mesa
-    */
-    permutation(N_List, [L1, L2, L3, L4, L5, L6, L7, L8]). % built-in que gera permutacoes 
-
-
-ocupacaoMesaAux(ListaNomes, ListaRest, OcupMesa) :-
-    /* 
-        Predicado Auxiliar: Predicado Final pronto para ser aplicado logo a seguir o
-        predicado once/1. De modo a obter uma unica solucao
-    */    
-    getNames(ListaNomes, X1, X2, X3, X4, X5, X6, X7, X8), % Obter as permutacoes de lugares
-    getRestrictions(ListaRest, X1, X2, X3, X4, X5, X6, X7, X8), % Aplicar as restricoes
-
-    OcupMesa = [[X1, X2, X3], [X4, X5], [X6, X7, X8]].  % Solucao
-
 ocupacaoMesa(ListaNomes, ListaRest, OcupMesa) :-
     /* 
         ocupacaoMesa eh verdade se OcupMesa for uma lista da forma
         [[X1, X2, X3], [X4, X5], [X6, X7, X8]] que determina a posicao dos
         nomes da lista ListaNomes sentadas ah mesa dada as restricoes impostas
         pela lista ListaRest
-    */
-    once(ocupacaoMesaAux(ListaNomes, ListaRest, OcupMesa)).
+    */   
+    permutation(ListaNomes, [X1, X2, X3, X4, X5, X6, X7, X8]), % Obter todas as permutacoes dos lugares
+    getRestrictions(ListaRest, X1, X2, X3, X4, X5, X6, X7, X8), % Aplicar as restricoes
+
+    OcupMesa = [[X1, X2, X3], [X4, X5], [X6, X7, X8]], !.  % Solucao
