@@ -26,7 +26,7 @@ eventosSemSalasDiaSemana(DiaDaSemana, EventosSemSala) :-
         ID,
         (evento(ID, _, _, _, semSala), horario(ID, DiaDaSemana, _, _, _, _)),
         EventosSemSala_pre
-    ), % Lista completa
+    ),
 
     sort(EventosSemSala_pre, EventosSemSala).
 
@@ -49,52 +49,52 @@ isPeriod(Period, ID) :-
 
 
 
-eventosSemSalasPeriodo([P|Ps], ListaSemSala) :-
+eventosSemSalasPeriodo([], []). % Caso Terminal
+
+eventosSemSalasPeriodo([P|Ps], LstSemSala) :-
     /*
         eventosSemSalasPeriodo eh verdade se ListaSemSala for a lista dos IDs
         de eventos sem salas que acontecem nos periodos da lista [P|Ps]
     */
     eventosSemSalas(Source),
-    include(isPeriod(P), Source, ListaParcialNew),
-    eventosSemSalasPeriodo(Ps, Temp), % Temp -> Lista eventos dos periodos anteriores
+    include(isPeriod(P), Source, LstFiltrada), % Lista Filtrada de acordo com o periodo
+    eventosSemSalasPeriodo(Ps, Temp),
 
-    append(Temp, ListaParcialNew, ListaSemSala_pre), % Lista completa
-    sort(ListaSemSala_pre, ListaSemSala).
-
-eventosSemSalasPeriodo([], []). % Caso Terminal
+    append(Temp, LstFiltrada, LstSemSala_pre),
+    sort(LstSemSala_pre, LstSemSala).
+    
 
 
 % ---------------------------------- PESQUISAS SIMPLES ----------------------------------
 
 
-organizaEventos([ListEventsHEAD|ListEventsTAIL], Periodo, EventosNoPeriodo) :-
-    /* Caso 1: Periodo errado */
-    \+ isPeriod(Periodo, ListEventsHEAD),
-    organizaEventos(ListEventsTAIL, Periodo, EventosNoPeriodo), !.
-
-organizaEventos([ListEventsHEAD|ListEventsTAIL], Periodo, EventosNoPeriodo) :-
-    /* 
-        organizaEventos eh verdade se EventosNoPeriodo for a lista dos IDs dos eventos de
-        ListEvents que acontecem no periodo Periodo
-        Caso 2: Periodo correto
-    */
-    isPeriod(Periodo, ListEventsHEAD),
-    organizaEventos(ListEventsTAIL, Periodo, Temp), % Temp -> Lista eventos anteriores
-
-    append(Temp, [ListEventsHEAD], EventosNoPeriodo_pre), % Lista completa
-    sort(EventosNoPeriodo_pre, EventosNoPeriodo).
 
 organizaEventos([], _, []). % Caso Terminal
 
+organizaEventos([EventLstH|EventLstT], Periodo, EventosPeriodo) :-
+    /* 
+        organizaEventos eh verdade se EventosNoPeriodo for a lista dos IDs dos eventos de
+        ListEvents que acontecem no periodo Periodo. Caso 1: Periodo correto
+    */
+    isPeriod(Periodo, EventLstH), !,
+    organizaEventos(EventLstT, Periodo, Temp),
+
+    append(Temp, [EventLstH], EventosPeriodo_pre),
+    sort(EventosPeriodo_pre, EventosPeriodo).
+
+organizaEventos([_|EventLstT], Periodo, EventosPeriodo) :-
+    /* Caso 2: Periodo errado */
+    organizaEventos(EventLstT, Periodo, EventosPeriodo).
 
 
-eventosMenoresQue(Duracao, ListaEventosMenoresQue) :-
+
+eventosMenoresQue(Duracao, LstEventosMenQue) :-
     /* 
         eventosMenoresQue eh verdade se ListaEventosMenoresQue for a lista de IDs dos
         eventos que teem duracao menor ou igual a Duracao
     */
-    findall(Id, (horario(Id, _, _, _, X, _), X =< Duracao), Lista_pre),
-    sort(Lista_pre, ListaEventosMenoresQue).
+    findall(Id, (horario(Id, _, _, _, X, _), X =< Duracao), Lst_pre),
+    sort(Lst_pre, LstEventosMenQue).
 
 
 
@@ -108,66 +108,62 @@ eventosMenoresQueBool(ID, Duracao) :-
 
 
 
-procuraDisciplinas(Curso, ListaDisciplinas) :-
+procuraDisciplinas(Curso, LstDisc) :-
     /* 
         procuraDisciplinas eh verdade se ListaDisciplinas for a lista das disciplinas
         do curso Curso
     */
-    findall(Disc, (turno(Id, Curso, _, _), evento(Id, Disc, _, _, _)), ListaDisc_pre),
-    sort(ListaDisc_pre, ListaDisciplinas).
+    findall(Disc, (turno(ID, Curso, _, _), evento(ID, Disc, _, _, _)), LstDisc_pre),
+    sort(LstDisc_pre, LstDisc).
 
 
 
-isSemesterOne(Id) :-
+isSemesterOne(ID) :-
     /* 
         Predicado Auxiliar: Eh verdade se o evento de dado ID ocorrer no primeiro
         semestre
     */
-    isPeriod(p1, Id);
-    isPeriod(p2, Id).
+    isPeriod(p1, ID); isPeriod(p2, ID).
 
 getSemester(Disciplina, Curso, Sem) :-
     /* 
         Predicado Auxiliar: Eh verdade se Sem for o numero correspondente ao semestre
-        em que uma dada disciplina Disciplina do curso Curso ocorre
-        Caso 1: disciplina do primeiro semestre
+        em que a disciplina Disciplina decorre.
     */
-    turno(Id, Curso, _, _),
-    evento(Id, Disciplina, _, _, _),
-    isSemesterOne(Id), Sem is 1, !.
+    turno(ID, Curso, _, _),
+    evento(ID, Disciplina, _, _, _),
+    isSemesterOne(ID), Sem = 1, !.
 
 getSemester(Disciplina, Curso, Sem) :-
-    /* Caso 2: disciplina do segundo semestre */
-    turno(Id, Curso, _, _),
-    evento(Id, Disciplina, _, _, _),
-    \+ isSemesterOne(Id), Sem is 2, !.
+    turno(ID, Curso, _, _),
+    evento(ID, Disciplina, _, _, _),
+    Sem = 2.
     
 
+organizaDisciplinas([], _, [[],[]]). % Caso Terminal.
 
-organizaDisciplinas([ListDiscHEAD|ListDiscTAIL], Curso, Semestres) :-
+organizaDisciplinas([LstDiscH|LstDiscT], Curso, Semestres) :-
     /* 
         organizaDisciplinas eh verdade se semestres for uma lista com duas sublistas
-        em que cada corresponde ao conjunto de disciplinas de ListDisc do semestre
+        em que cada uma corresponde ao conjunto de disciplinas de ListDisc do semestre
         (Lista1 -> Disciplinas de Semestre 1, Lista2 -> Disciplinas de Semestre 2)
-        Caso 1: ListDiscHEAD eh do semestre 1 
+        Caso 1: LstDiscH eh do semestre 1 
     */
-    getSemester(ListDiscHEAD, Curso, 1),
-    organizaDisciplinas(ListDiscTAIL, Curso, [TempHEAD,TempTAIL]),
+    getSemester(LstDiscH, Curso, 1),
+    organizaDisciplinas(LstDiscT, Curso, [TempH,TempT]),
 
-    append(TempHEAD, [ListDiscHEAD], Semestre1_pre), % Adicionar disciplina a sub-lista 1
+    append(TempH, [LstDiscH], Semestre1_pre), % Adicionar disciplina a sub-lista 1
     sort(Semestre1_pre, Semestre1),
-    append([Semestre1], [TempTAIL], Semestres), !. % Obter a lista completa
+    append([Semestre1], [TempT], Semestres), !. % Obter a lista completa
 
-organizaDisciplinas([ListDiscHEAD|ListDiscTAIL], Curso, Semestres) :-
-    /* Caso 2: ListDiscHEAD eh do semestre 2 */
-    getSemester(ListDiscHEAD, Curso, 2),
-    organizaDisciplinas(ListDiscTAIL, Curso, [TempHEAD,TempTAIL]),
+organizaDisciplinas([LstDiscH|LstDiscT], Curso, Semestres) :-
+    /* Caso 2: LstDiscH eh do semestre 2 */
+    getSemester(LstDiscH, Curso, 2),
+    organizaDisciplinas(LstDiscT, Curso, [TempH,TempT]),
 
-    append(TempTAIL, [ListDiscHEAD], Semestre2_pre), % Adicionar disciplina a sub-lista 2
+    append(TempT, [LstDiscH], Semestre2_pre), % Adicionar disciplina a sub-lista 2
     sort(Semestre2_pre, Semestre2),
-    append([TempHEAD], [Semestre2], Semestres), !. % Obter a lista completa
-
-organizaDisciplinas([], _, [[],[]]). % Caso Terminal.
+    append([TempH], [Semestre2], Semestres), !. % Obter a lista completa
 
 
 
@@ -183,13 +179,12 @@ filterIds(ID, P, Curso, A) :-
         no periodo P e no ano A
         Caso 1: Eventos do primeiro semestre
     */
-    P \= p3, P \= p4,
+    P \= p3, P \= p4, !,
     turno(ID, Curso, A, _),
     (horario(ID, _, _, _, _, P); horario(ID, _, _, _, _, p1_2)).
 
 filterIds(ID, P, Curso, A) :-
     /* Caso 2: Eventos do segundo semestre */
-    P \= p1, P \= p2,
     turno(ID, Curso, A, _),
     (horario(ID, _, _, _, _, P); horario(ID, _, _, _, _, p3_4)).
 
@@ -198,25 +193,25 @@ horasCurso(Periodo, Curso, Ano, TotalHours) :-
         horasCurso eh verdade se TotalHoras for o numero de horas total dos eventos
         do curso Curso que occorrem no periodo Periodo e ano Ano
     */
-    findall(ID, filterIds(ID, Periodo, Curso, Ano), ID_List_pre),% Lista de IDs filtrados
+    findall(ID, filterIds(ID, Periodo, Curso, Ano), ID_List_pre), % Lista de IDs filtrados
     sort(ID_List_pre, ID_List),
     maplist(idToDuration, ID_List, Dur_List), % transforma ID na Duracao correspondente
     foldl(sum, Dur_List, 0, TotalHours). % Soma todos os elementos da lista 
 
 
+getEvolution(_, [], [], []) :- !. % Caso Terminal
 
-getEvolution(Curso, [ListA_HEAD|ListA_TAIL], [ListP_HEAD|ListP_TAIL], Evolution) :-
+getEvolution(Curso, [LstA_H|LstA_T], [LstP_H|LstP_T], Evolution) :-
     /* 
         Predicado Auxiliar: eh verdade se Evolution for a lista das horas totais
         dados a lista de anos ListA e lista de periodos ListP de um curso
         Curso
     */
-    horasCurso(ListP_HEAD, Curso, ListA_HEAD, NumHoras),
-    Info = [(ListA_HEAD, ListP_HEAD, NumHoras)], % Tuplo de informacao
-    getEvolution(Curso, ListA_TAIL, ListP_TAIL, Temp), % Lista dos tuplos anteriores
+    horasCurso(LstP_H, Curso, LstA_H, NumHoras),
+    Info = [(LstA_H, LstP_H, NumHoras)], % Tuplo de informacao
+    getEvolution(Curso, LstA_T, LstP_T, Temp),
     append(Temp, Info, Evolution).
 
-getEvolution(_, [], [], []) :- !. % Caso Terminal
 
 
 evolucaoHorasCurso(Curso, Evolucao) :-
@@ -236,34 +231,34 @@ evolucaoHorasCurso(Curso, Evolucao) :-
 % --------------------------------- OCUPACOES CRITICAS ----------------------------------
 
 
-ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+ocupaSlot(HiniDada, HfimDada, HiniEvt, HfimEvt, Horas) :-
     /* 
         ocupaSlot eh verdade se Horas for o num de horas sobrespostas entre
         o evento que vai de HiniEvt e acaba em HfinEvt e o slot que vai de HiniDada e
         acaba em HfinDada
         Caso 1: Evento totalmente contido no slot
     */
-    (HiniDada =< HiniEvt), (HfinDada >= HiniEvt),
-    (HiniDada =< HfinEvt), (HfinDada >= HfinEvt),
-    Horas is HfinEvt - HiniEvt, !.
+    (HiniDada =< HiniEvt), (HfimDada >= HiniEvt),
+    (HiniDada =< HfimEvt), (HfimDada >= HfimEvt),
+    Horas is HfimEvt - HiniEvt, !.
 
-ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+ocupaSlot(HiniDada, HfimDada, HiniEvt, HfimEvt, Horas) :-
     /* Caso 2: Slot totalmente contido no evento */
-    (HiniDada >= HiniEvt), (HfinDada >= HiniEvt),
-    (HiniDada =< HfinEvt), (HfinDada =< HfinEvt),
-    Horas is HfinDada - HiniDada, !.
+    (HiniDada >= HiniEvt), (HfimDada >= HiniEvt),
+    (HiniDada =< HfimEvt), (HfimDada =< HfimEvt),
+    Horas is HfimDada - HiniDada, !.
 
-ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+ocupaSlot(HiniDada, HfimDada, HiniEvt, HfimEvt, Horas) :-
     /* Caso 3: sobreposicao no inicio do evento */
-    (HiniDada =< HiniEvt), (HfinDada >= HiniEvt),
-    (HiniDada =< HfinEvt), (HfinDada =< HfinEvt),
-    Horas is HfinDada - HiniEvt, !.
+    (HiniDada =< HiniEvt), (HfimDada >= HiniEvt),
+    (HiniDada =< HfimEvt), (HfimDada =< HfimEvt),
+    Horas is HfimDada - HiniEvt, !.
 
 ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
     /* Caso 4: sobreposicao no fim do evento */
-    (HiniDada >= HiniEvt), (HfinDada >= HiniEvt),
-    (HiniDada =< HfinEvt), (HfinDada >= HfinEvt),
-    Horas is HfinEvt - HiniDada, !.
+    (HiniDada >= HiniEvt), (HfimDada >= HiniEvt),
+    (HiniDada =< HfimEvt), (HfimDada >= HfimEvt),
+    Horas is HfimEvt - HiniDada, !.
 
 
 
@@ -278,7 +273,7 @@ getEventIds(Periodo, TipoSala, DiaSemana, Hini, Hfim, Duracao) :-
     evento(Id, _, _, _, Room),
     salas(TipoSala, Salas),
     memberchk(Room, Salas), % Ver se a sala do evento eh uma sala do tipo certo 
-    isPeriod(Periodo, Id). % Ver se o periodo corresponde
+    isPeriod(Periodo, Id).
 
 
 numHorasOcupadas(Periodo, TipoSala, DiaSemana, Hini, Hfim, SomaHoras) :-
@@ -291,9 +286,9 @@ numHorasOcupadas(Periodo, TipoSala, DiaSemana, Hini, Hfim, SomaHoras) :-
         Duracao,
         getEventIds(Periodo, TipoSala, DiaSemana, Hini, Hfim, Duracao),
         DuracaoList
-    ), % Obter a lista das duracoes dos eventos selecionados
+    ),
 
-    foldl(sum, DuracaoList, 0, SomaHoras). % Somar todos os elementos da lista
+    foldl(sum, DuracaoList, 0, SomaHoras). % Somar todas as duracoes da lista
 
 
 
@@ -318,7 +313,7 @@ percentagem(SomaHoras, Max, Percentagem) :-
 
 
 
-allDias(D) :-
+allDays(D) :-
     /* Predicado Auxiliar: eh verdade se D for um dia da semana valido */
     D = segunda-feira; D = terca-feira; D = quarta-feira;
     D = quinta-feira; D = sexta-feira.
@@ -333,8 +328,8 @@ ocupacaoCritica_Aux(Hini, Hfim, Thold, Result_Dia, Result_Sala, Result_Percent) 
         ocupacao de uma tal sala Result_Room e tal dia Result_Day durante Hini->Hfim
     */
     salas(Result_Sala, _),
-    allDias(Result_Dia),
-    allPeriods(AllPeriods),
+    allDays(Result_Dia), allPeriods(AllPeriods),
+
     numHorasOcupadas(AllPeriods, Result_Sala, Result_Dia, Hini, Hfim, SumH),
     ocupacaoMax(Result_Sala, Hini, Hfim, Max),
     percentagem(SumH, Max, Result_Raw), Result_Raw > Thold,
@@ -388,6 +383,9 @@ naoFrente_(Name1, Name2, X1, X2, X3, X6, X7, X8) :-
     \+ frente_(Name1, Name2, X1, X2, X3, X6, X7, X8).
 
 
+
+getRestrictions([], _, _, _, _, _, _, _, _). % Caso Terminal
+
 getRestrictions([RestHEAD|RestTAIL], X1, X2, X3, X4, X5, X6, X7, X8) :-
     /* 
         Predicado Auxiliar: Determina as restricoes impostas pela a lista [RestHEAD|RestTAIL]
@@ -402,7 +400,6 @@ getRestrictions([RestHEAD|RestTAIL], X1, X2, X3, X4, X5, X6, X7, X8) :-
 
     getRestrictions(RestTAIL, X1, X2, X3, X4, X5, X6, X7, X8).
 
-getRestrictions([], _, _, _, _, _, _, _, _). % Caso Terminal
 
 
 ocupacaoMesa(ListaNomes, ListaRest, OcupMesa) :-
@@ -411,8 +408,10 @@ ocupacaoMesa(ListaNomes, ListaRest, OcupMesa) :-
         [[X1, X2, X3], [X4, X5], [X6, X7, X8]] que determina a posicao dos
         nomes da lista ListaNomes sentadas ah mesa dada as restricoes impostas
         pela lista ListaRest
-    */   
-    permutation(ListaNomes, [X1, X2, X3, X4, X5, X6, X7, X8]), % Obter todas as permutacoes dos lugares
+    */
+    
+    % Obter todas as permutacoes dos lugares   
+    permutation(ListaNomes, [X1, X2, X3, X4, X5, X6, X7, X8]),
     getRestrictions(ListaRest, X1, X2, X3, X4, X5, X6, X7, X8), % Aplicar as restricoes
 
     OcupMesa = [[X1, X2, X3], [X4, X5], [X6, X7, X8]], !.  % Solucao
