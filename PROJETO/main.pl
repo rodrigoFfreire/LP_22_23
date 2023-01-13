@@ -254,7 +254,7 @@ ocupaSlot(HiniDada, HfimDada, HiniEvt, HfimEvt, Horas) :-
     (HiniDada =< HfimEvt), (HfimDada =< HfimEvt),
     Horas is HfimDada - HiniEvt, !.
 
-ocupaSlot(HiniDada, HfinDada, HiniEvt, HfinEvt, Horas) :-
+ocupaSlot(HiniDada, HfimDada, HiniEvt, HfimEvt, Horas) :-
     /* Caso 4: sobreposicao no fim do evento */
     (HiniDada >= HiniEvt), (HfimDada >= HiniEvt),
     (HiniDada =< HfimEvt), (HfimDada >= HfimEvt),
